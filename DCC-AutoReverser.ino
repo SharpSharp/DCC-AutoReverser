@@ -19,6 +19,7 @@ const int adc = 1024;               // Arduino Analog to Digital Conversion reso
 const float sensitivity = 0.185;    // sensetivity of ACS712 in V (185mV/A)
 const float triggerCurrent = 1.0;   // trigger current to activate the reverser
 #define sensorMidPoint 511          // sensor value when reading 0 amps
+const byte NUMBER_OF_VALUES = 3;    // values tested before triggering
 
 float triggerVoltage = triggerCurrent * sensitivity;        // voltage required to trigger
 float triggerValue = triggerVoltage / vcc * adc;            // value change required for trigger
@@ -33,6 +34,7 @@ struct AutoReverse
   byte railA;         // pin connected to output relay for first rail
   byte railB;         // pin connected to output relay for second rail
   bool triggerReverse;
+  byte sensorCounter[2];
   
   void setup()
   {
@@ -41,7 +43,8 @@ struct AutoReverse
     pinMode(railA,   OUTPUT);
     pinMode(railB,   OUTPUT);
     digitalWrite(railA, LOW);      //setup relay output to their Normally Closed position
-    digitalWrite(railB, LOW);      //setup relay output to their Normally Closed position   
+    digitalWrite(railB, LOW);      //setup relay output to their Normally Closed position
+  
   }
   void reverseOutput()
   {
@@ -52,9 +55,19 @@ struct AutoReverse
   
   void  readSensor(byte sensor)
   {
-  // read analog signal from current sensor and test against trigger values
-  if (analogRead(sensor) > highTriggerValue) triggerReverse = true;
-  if (analogRead(sensor) < lowTriggerValue)  triggerReverse = true;
+    byte i;
+    int sensorReading = analogRead(sensor);         // read analog signal from current sensor
+    if (sensor == sensor1) i = 0;
+    else i = 1;
+    
+    if ((sensorReading > highTriggerValue) || (sensorReading < lowTriggerValue)) sensorCounter[i] += 1;  // increment sensor counter
+    else sensorCounter[i] = 0;                                                                           // zero sensor counter
+
+    if (sensorCounter[i] == NUMBER_OF_VALUES)       // check for multiple triggers
+    {
+      triggerReverse = true;
+      sensorCounter[i] = 0;
+    }
   }
   
   void testForShort()
@@ -70,10 +83,8 @@ AutoReverse reversingTrack = {A0, A1, 4, 5};
 //AutoReverse wye = {A2, A3, 6, 7};               // uncoment for second reverser
 //AutoReverse reversingLoop = {A4, A5, 8, 9};     // uncoment for third reverser
 
-
-
 void setup() {
-//  Serial.begin(9600); 
+  //Serial.begin(9600); 
   delay(500);               // wait half a second to allow the sensers to stablize
   reversingTrack.setup();
 //  wye.setup();            // uncoment for second reverser
@@ -82,7 +93,7 @@ void setup() {
 
 void loop() {
   reversingTrack.testForShort();
-//  wye.testForShort();
-//  reversingLoop.testForShort();             // uncoment for second reverser
-//  delay(500); // slow output for testing    // uncoment for third reverser
- }
+//  wye.testForShort();             // uncoment for second reverser
+//  reversingLoop.testForShort();   // uncoment for third reverser
+//  delay(5); // slow output for testing  
+}
