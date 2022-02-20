@@ -11,7 +11,7 @@
  * 
  * DCC is an AC signal, current can be +ve or -ve. 
  * For fast detection both are tested.
- * 
+ * Triggers are set for above (+ve) and below (-ve) the midpoint.
  */
  
 const float vcc = 5.0;              // voltage on your Arduino
@@ -23,7 +23,8 @@ const float triggerCurrent = 1.0;   // trigger current to activate the reverser
 float triggerVoltage = triggerCurrent * sensitivity;        // voltage required to trigger
 float triggerValue = triggerVoltage / vcc * adc;            // value change required for trigger
 
-float TriggerPoint = sensorMidPoint + triggerValue;         // set trigger for +ve current
+float highTriggerValue = sensorMidPoint + triggerValue;     // set trigger for +ve current
+float lowTriggerValue =  sensorMidPoint - triggerValue;     // set trigger for -ve current
 
 struct AutoReverse
 {
@@ -31,8 +32,7 @@ struct AutoReverse
   byte sensor2;       // analog input pin from acs712 second rail
   byte railA;         // pin connected to output relay for first rail
   byte railB;         // pin connected to output relay for second rail
-  bool triggerReverse;  
-  int  sensorValue;
+  bool triggerReverse;
   
   void setup()
   {
@@ -52,9 +52,9 @@ struct AutoReverse
   
   void  readSensor(byte sensor)
   {
-    sensorValue = analogRead(sensor);                                   // read analog signal from current sensor
-    if (sensorValue < sensorMidPoint) sensorValue = 1023 - sensorValue; // correct sensor value for a -ve current
-    if (sensorValue > TriggerPoint) triggerReverse = true;
+  // read analog signal from current sensor and test against trigger values
+  if (analogRead(sensor) > highTriggerValue) triggerReverse = true;
+  if (analogRead(sensor) < lowTriggerValue)  triggerReverse = true;
   }
   
   void testForShort()
