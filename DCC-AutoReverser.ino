@@ -63,7 +63,7 @@ struct AutoReverse
     if ((sensorReading > highTriggerValue) || (sensorReading < lowTriggerValue)) sensorCounter[i] += 1;  // increment sensor counter
     else sensorCounter[i] = 0;                                                                           // zero sensor counter
 
-    if (sensorCounter[i] == NUMBER_OF_VALUES)       // check for multiple triggers
+    if (sensorCounter[i] >= NUMBER_OF_VALUES)       // check for multiple triggers
     {
       triggerReverse = true;
       sensorCounter[i] = 0;
